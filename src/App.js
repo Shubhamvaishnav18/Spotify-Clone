@@ -1,148 +1,119 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import SpotifyWebApi from 'spotify-web-api-js';
+import { getAccessToken, loginUrl } from './api/spotify';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Album from './pages/Album';
 import Playlist from './pages/Playlist';
-import Genre from './pages/Genre';
+import Category from './pages/Category';
+import Login from './pages/Login';
 import PlayerControls from './components/PlayerControls';
 
-function App() {
-  const [currentSong, setCurrentSong] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [progress, setProgress] = useState(0);
+const spotifyApi = new SpotifyWebApi();
 
-  // Mock data for playlists, albums, and genres
-  const [data, setData] = useState({
-    playlists: [],
-    albums: [],
-    genres: [],
-    featured: [],
-  });
+function App() {
+  const [token, setToken] = useState(null);
+  const [currentTrack, setCurrentTrack] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [player, setPlayer] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // In a real app, you would fetch this data from an API
-    const mockData = {
-      playlists: [
-        {
-          id: '1',
-          name: 'Today\'s Top Hits',
-          description: 'The most popular songs right now',
-          image: 'https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6',
-          songs: [
-            { id: 's1', title: 'Blinding Lights', artist: 'The Weeknd', duration: '3:20', album: 'After Hours' },
-            { id: 's2', title: 'Save Your Tears', artist: 'The Weeknd', duration: '3:35', album: 'After Hours' },
-          ]
-        },
-        {
-          id: '2',
-          name: 'Rock Classics',
-          description: 'Rock legends & epic songs',
-          image: 'https://i.scdn.co/image/ab67706f00000002fe24d7084be472288cd6ee6c',
-          songs: [
-            { id: 's3', title: 'Bohemian Rhapsody', artist: 'Queen', duration: '5:55', album: 'A Night at the Opera' },
-            { id: 's4', title: 'Sweet Child O\' Mine', artist: 'Guns N\' Roses', duration: '5:56', album: 'Appetite for Destruction' },
-          ]
-        }
-      ],
-      albums: [
-        {
-          id: 'a1',
-          title: 'After Hours',
-          artist: 'The Weeknd',
-          year: '2020',
-          image: 'https://i.scdn.co/image/ab67616d00001e02e1a0e0e9c7a9b0e0e0e0e0e0',
-          songs: [
-            { id: 's1', title: 'Blinding Lights', duration: '3:20' },
-            { id: 's2', title: 'Save Your Tears', duration: '3:35' },
-          ]
-        },
-        {
-          id: 'a2',
-          title: 'Thriller',
-          artist: 'Michael Jackson',
-          year: '1982',
-          image: 'https://i.scdn.co/image/ab67616d00001e02e1a0e0e9c7a9b0e0e0e0e0e0',
-          songs: [
-            { id: 's5', title: 'Thriller', duration: '5:57' },
-            { id: 's6', title: 'Beat It', duration: '4:18' },
-          ]
-        }
-      ],
-      genres: [
-        { id: 'g1', name: 'Pop', image: 'https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6' },
-        { id: 'g2', name: 'Rock', image: 'https://i.scdn.co/image/ab67706f00000002fe24d7084be472288cd6ee6c' },
-        { id: 'g3', name: 'Hip Hop', image: 'https://i.scdn.co/image/ab67706f00000002d0b4e0e9c7a9b0e0e0e0e0e0' },
-      ],
-      featured: [
-        {
-          id: 'f1',
-          name: 'New Releases',
-          items: [
-            { id: 'a1', title: 'After Hours', artist: 'The Weeknd', image: 'https://i.scdn.co/image/ab67616d00001e02e1a0e0e9c7a9b0e0e0e0e0e0', type: 'album' },
-            { id: 'p1', title: 'Today\'s Top Hits', artist: 'Various Artists', image: 'https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6', type: 'playlist' },
-          ]
-        },
-        {
-          id: 'f2',
-          name: 'Featured Playlists',
-          items: [
-            { id: 'p1', title: 'Today\'s Top Hits', artist: 'Various Artists', image: 'https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6', type: 'playlist' },
-            { id: 'p2', title: 'Rock Classics', artist: 'Various Artists', image: 'https://i.scdn.co/image/ab67706f00000002fe24d7084be472288cd6ee6c', type: 'playlist' },
-          ]
-        }
-      ]
-    };
+    const token = getAccessToken();
+    if (token) {
+      setToken(token);
+      spotifyApi.setAccessToken(token);
+      
+      // Get user profile
+      spotifyApi.getMe().then(user => {
+        setUser(user);
+      });
 
-    setData(mockData);
+      // Initialize player
+      const script = document.createElement("script");
+      script.src = "https://sdk.scdn.co/spotify-player.js";
+      script.async = true;
+      document.body.appendChild(script);
+
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        const player = new window.Spotify.Player({
+          name: 'Spotify Clone',
+          getOAuthToken: cb => { cb(token); },
+          volume: 0.5
+        });
+
+        setPlayer(player);
+
+        player.addListener('ready', ({ device_id }) => {
+          setDeviceId(device_id);
+        });
+
+        player.addListener('player_state_changed', state => {
+          if (!state) return;
+          
+          setCurrentTrack(state.track_window.current_track);
+          setIsPlaying(!state.paused);
+        });
+
+        player.connect();
+      };
+    }
   }, []);
 
-  const playSong = (song) => {
-    setCurrentSong(song);
-    setIsPlaying(true);
+  const playTrack = (track) => {
+    if (!deviceId) return;
+    
+    spotifyApi.play({
+      device_id: deviceId,
+      uris: [track.uri]
+    }).then(() => {
+      setCurrentTrack(track);
+      setIsPlaying(true);
+    });
   };
 
   const togglePlay = () => {
+    if (!player) return;
+    
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.resume();
+    }
     setIsPlaying(!isPlaying);
   };
 
-  const handleVolumeChange = (e) => {
-    setVolume(e.target.value);
-  };
-
-  const handleProgressChange = (e) => {
-    setProgress(e.target.value);
-  };
+  if (!token) {
+    return <Login />;
+  }
 
   return (
     <Router>
       <div className="flex flex-col h-screen bg-spotify-dark">
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
+          <Sidebar user={user} />
           <div className="flex flex-col flex-1 overflow-hidden">
             <Header />
             <div className="flex-1 overflow-y-auto p-6">
               <Routes>
-                <Route path="/" element={<Home data={data} playSong={playSong} />} />
-                <Route path="/search" element={<Search data={data} playSong={playSong} />} />
-                <Route path="/album/:id" element={<Album data={data.albums} playSong={playSong} />} />
-                <Route path="/playlist/:id" element={<Playlist data={data.playlists} playSong={playSong} />} />
-                <Route path="/genre/:id" element={<Genre data={data.genres} playSong={playSong} />} />
+                <Route path="/" element={<Home playTrack={playTrack} />} />
+                <Route path="/search" element={<Search playTrack={playTrack} />} />
+                <Route path="/album/:id" element={<Album playTrack={playTrack} />} />
+                <Route path="/playlist/:id" element={<Playlist playTrack={playTrack} />} />
+                <Route path="/category/:id" element={<Category playTrack={playTrack} />} />
               </Routes>
             </div>
           </div>
         </div>
         <PlayerControls
-          currentSong={currentSong}
+          currentTrack={currentTrack}
           isPlaying={isPlaying}
           togglePlay={togglePlay}
-          volume={volume}
-          handleVolumeChange={handleVolumeChange}
-          progress={progress}
-          handleProgressChange={handleProgressChange}
+          playTrack={playTrack}
         />
       </div>
     </Router>

@@ -1,28 +1,62 @@
+import { useState, useEffect, useRef } from 'react';
 import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaVolumeUp, FaRandom, FaRedo } from 'react-icons/fa';
 import { BsFillHeartFill } from 'react-icons/bs';
 
 const PlayerControls = ({
-  currentSong,
+  currentTrack,
   isPlaying,
   togglePlay,
-  volume,
-  handleVolumeChange,
-  progress,
-  handleProgressChange
+  playTrack
 }) => {
+  const [volume, setVolume] = useState(50);
+  const [progress, setProgress] = useState(0);
+  const progressInterval = useRef(null);
+
+  useEffect(() => {
+    if (isPlaying) {
+      progressInterval.current = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(progressInterval.current);
+            return 0;
+          }
+          return prev + 0.5;
+        });
+      }, 1000);
+    } else {
+      clearInterval(progressInterval.current);
+    }
+
+    return () => clearInterval(progressInterval.current);
+  }, [isPlaying]);
+
+  const handleVolumeChange = (e) => {
+    setVolume(e.target.value);
+    // In a real app, you would set the player volume here
+  };
+
+  const formatTime = (ms) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
   return (
     <div className="bg-spotify-light h-20 border-t border-spotify-gray flex items-center px-4">
-      {currentSong ? (
+      {currentTrack ? (
         <>
           <div className="w-1/4 flex items-center">
             <img 
-              src={currentSong.image || 'https://i.scdn.co/image/ab67616d00001e02e1a0e0e9c7a9b0e0e0e0e0e0'} 
-              alt={currentSong.title} 
+              src={currentTrack.album?.images[2]?.url || 'https://via.placeholder.com/150'} 
+              alt={currentTrack.name} 
               className="w-14 h-14 object-cover mr-3"
             />
-            <div>
-              <h4 className="text-white text-sm font-medium">{currentSong.title}</h4>
-              <p className="text-spotify-lightest text-xs">{currentSong.artist}</p>
+            <div className="min-w-0">
+              <h4 className="text-white text-sm font-medium truncate">{currentTrack.name}</h4>
+              <p className="text-spotify-lightest text-xs truncate">
+                {currentTrack.artists?.map(artist => artist.name).join(', ')}
+              </p>
             </div>
             <button className="ml-4 text-spotify-lightest hover:text-white">
               <BsFillHeartFill />
@@ -50,16 +84,16 @@ const PlayerControls = ({
               </button>
             </div>
             <div className="w-full flex items-center space-x-2">
-              <span className="text-xs text-spotify-lightest">0:00</span>
+              <span className="text-xs text-spotify-lightest">{formatTime(progress * currentTrack.duration_ms / 100)}</span>
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={progress}
-                onChange={handleProgressChange}
+                onChange={(e) => setProgress(e.target.value)}
                 className="w-full h-1 bg-spotify-gray rounded-full appearance-none cursor-pointer"
               />
-              <span className="text-xs text-spotify-lightest">3:30</span>
+              <span className="text-xs text-spotify-lightest">{formatTime(currentTrack.duration_ms)}</span>
             </div>
           </div>
           <div className="w-1/4 flex justify-end items-center space-x-2">
@@ -76,7 +110,7 @@ const PlayerControls = ({
         </>
       ) : (
         <div className="w-full text-center text-spotify-lightest">
-          No song selected
+          Select a song to play
         </div>
       )}
     </div>

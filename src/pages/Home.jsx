@@ -1,34 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { FaPlay } from 'react-icons/fa';
+import { getFeaturedPlaylists, getNewReleases, getCategories } from '../api/spotify';
 import AlbumCard from '../components/AlbumCard';
 import PlaylistCard from '../components/PlaylistCard';
+import CategoryCard from '../components/CategoryCard';
 
-const Home = ({ data, playSong }) => {
+const Home = ({ playTrack }) => {
   const [activeTab, setActiveTab] = useState('featured');
+  const [featuredPlaylists, setFeaturedPlaylists] = useState([]);
+  const [newReleases, setNewReleases] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Safe access to featured data with fallbacks
-  const featuredData = data?.featured || [];
-  const newReleases = featuredData.find(f => f.name === 'New Releases')?.items || [];
-  const featuredPlaylists = featuredData.find(f => f.name === 'Featured Playlists')?.items || [];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [playlistsResponse, releasesResponse, categoriesResponse] = await Promise.all([
+          getFeaturedPlaylists(),
+          getNewReleases(),
+          getCategories()
+        ]);
+        
+        setFeaturedPlaylists(playlistsResponse.data.playlists.items);
+        setNewReleases(releasesResponse.data.albums.items);
+        setCategories(categoriesResponse.data.categories.items);
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-spotify-green"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-6">Good afternoon</h1>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {data?.playlists?.slice(0, 6).map(playlist => (
+          {featuredPlaylists.slice(0, 6).map(playlist => (
             <div 
               key={playlist.id} 
-              className="bg-spotify-light bg-opacity-40 rounded flex items-center overflow-hidden hover:bg-opacity-60 transition cursor-pointer"
-              onClick={() => playSong(playlist.songs[0])}
+              className="bg-spotify-light bg-opacity-40 rounded flex items-center overflow-hidden hover:bg-opacity-60 transition cursor-pointer group"
+              onClick={() => playTrack(playlist.tracks.items[0]?.track)}
             >
               <img 
-                src={playlist.image} 
+                src={playlist.images[0]?.url || 'https://via.placeholder.com/150'} 
                 alt={playlist.name} 
                 className="w-16 h-16 object-cover"
               />
-              <div className="ml-4">
-                <h3 className="text-white font-medium">{playlist.name}</h3>
+              <div className="ml-4 flex-1 min-w-0">
+                <h3 className="text-white font-medium truncate">{playlist.name}</h3>
+                <p className="text-spotify-lightest text-xs truncate">{playlist.description}</p>
               </div>
+              <button className="mr-4 opacity-0 group-hover:opacity-100 transition">
+                <FaPlay className="text-white" />
+              </button>
             </div>
           ))}
         </div>
@@ -54,72 +90,38 @@ const Home = ({ data, playSong }) => {
         </div>
 
         {activeTab === 'featured' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {featuredPlaylists.map(item => {
-              if (!item) return null;
-              
-              if (item.type === 'playlist') {
-                const playlist = data?.playlists?.find(p => p.id === item.id);
-                return playlist ? (
-                  <PlaylistCard 
-                    key={item.id} 
-                    playlist={playlist} 
-                    playSong={playSong}
-                  />
-                ) : null;
-              } else {
-                const album = data?.albums?.find(a => a.id === item.id);
-                return album ? (
-                  <AlbumCard 
-                    key={item.id} 
-                    album={album} 
-                    playSong={playSong}
-                  />
-                ) : null;
-              }
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {featuredPlaylists.map(playlist => (
+              <PlaylistCard 
+                key={playlist.id} 
+                playlist={playlist} 
+                playTrack={playTrack}
+              />
+            ))}
           </div>
         )}
 
         {activeTab === 'new' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {newReleases.map(item => {
-              if (!item) return null;
-              
-              if (item.type === 'playlist') {
-                const playlist = data?.playlists?.find(p => p.id === item.id);
-                return playlist ? (
-                  <PlaylistCard 
-                    key={item.id} 
-                    playlist={playlist} 
-                    playSong={playSong}
-                  />
-                ) : null;
-              } else {
-                const album = data?.albums?.find(a => a.id === item.id);
-                return album ? (
-                  <AlbumCard 
-                    key={item.id} 
-                    album={album} 
-                    playSong={playSong}
-                  />
-                ) : null;
-              }
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {newReleases.map(album => (
+              <AlbumCard 
+                key={album.id} 
+                album={album} 
+                playTrack={playTrack}
+              />
+            ))}
           </div>
         )}
       </div>
 
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-white mb-4">Genres & Moods</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {data?.genres?.map(genre => (
-            <div 
-              key={genre.id} 
-              className="bg-gradient-to-br from-purple-600 to-blue-400 p-4 rounded-md cursor-pointer hover:opacity-90 transition"
-            >
-              <h3 className="text-white font-medium">{genre.name}</h3>
-            </div>
+        <h2 className="text-xl font-bold text-white mb-4">Browse all</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+          {categories.map(category => (
+            <CategoryCard 
+              key={category.id} 
+              category={category} 
+            />
           ))}
         </div>
       </div>
