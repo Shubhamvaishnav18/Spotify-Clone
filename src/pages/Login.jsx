@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAccessToken } from '../api/spotify';
+import { getAccessToken, loginUrl } from '../api/spotify';
 import { FaSpotify } from 'react-icons/fa';
 
-const Login = ({ loginUrl }) => {
+const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
