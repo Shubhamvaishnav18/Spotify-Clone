@@ -30,15 +30,15 @@ function App() {
       spotifyApi.setAccessToken(token);
       
       // Get user profile
-      spotifyApi.getMe().then(user => {
-        setUser(user);
-      });
+      // spotifyApi.getMe().then(user => {
+      //   setUser(user);
+      // });
 
-      // Initialize player
-      const script = document.createElement("script");
-      script.src = "https://sdk.scdn.co/spotify-player.js";
-      script.async = true;
-      document.body.appendChild(script);
+      // Initialize player only when we have a token
+    const script = document.createElement("script");
+    script.src = "https://sdk.scdn.co/spotify-player.js";
+    script.async = true;
+    document.body.appendChild(script)
 
       window.onSpotifyWebPlaybackSDKReady = () => {
         const player = new window.Spotify.Player({
