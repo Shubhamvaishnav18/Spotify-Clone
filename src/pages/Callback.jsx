@@ -6,16 +6,21 @@ const Callback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = getAccessToken();
+    console.log('Current URL hash:', window.location.hash); // Debug
     
-    if (token) {
-      // Transfer playback to this device if needed
-      navigate('/', { replace: true });
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    
+    if (params.get('error')) {
+      console.error('Auth error:', params.get('error'));
+      navigate(`/login?error=auth_failed`, { replace: true });
     } else {
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
-      const error = params.get('error');
-      navigate(`/login?error=${error || 'authentication_failed'}`, { replace: true });
+      const token = params.get('access_token');
+      if (token) {
+        localStorage.setItem('spotify_token', token);
+        window.history.replaceState({}, '', '/'); // Clean URL
+        navigate('/');
+      }
     }
   }, [navigate]);
 

@@ -37,8 +37,7 @@ spotifyAPI.interceptors.request.use(config => {
 });
 
 // API endpoints (keep your existing ones)
-export const loginUrl = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=streaming%20user-read-email%20user-read-private%20user-library-read%20user-library-modify%20user-read-playback-state%20user-modify-playback-state&show_dialog=true`;
-
+export const loginUrl = `https://accounts.spotify.com/authorize?client_id=ad0a6353cb864bf9a732ddeb7acb62cc&response_type=token&redirect_uri=https%3A%2F%2Fspotify-clone-chi-blond.vercel.app%2Fcallback&scope=streaming%20user-read-email%20user-read-private%20user-library-read%20user-library-modify%20user-read-playback-state%20user-modify-playback-state&show_dialog=true`;
 // API endpoints
 export const getFeaturedPlaylists = () => spotifyAPI.get('/browse/featured-playlists?limit=6');
 export const getNewReleases = () => spotifyAPI.get('/browse/new-releases?limit=6');

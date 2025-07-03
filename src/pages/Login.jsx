@@ -22,6 +22,7 @@ const Login = () => {
   const handleLogin = () => {
     // Clear any existing errors and initiate login
     setError('');
+    console.log('Redirecting to:', loginUrl);
     window.location.href = loginUrl;
   };
 
@@ -47,6 +48,7 @@ const Login = () => {
         >
           Login with Spotify
         </button>
+        
       </div>
     </div>
   );

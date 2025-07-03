@@ -25,14 +25,15 @@ function App() {
 
   useEffect(() => {
     const token = getAccessToken();
+    console.log("Initial token:", getAccessToken());
     if (token) {
       setToken(token);
       spotifyApi.setAccessToken(token);
       
       // Get user profile
-      // spotifyApi.getMe().then(user => {
-      //   setUser(user);
-      // });
+      spotifyApi.getMe().then(user => {
+        setUser(user);
+      });
 
       // Initialize player only when we have a token
     const script = document.createElement("script");
