@@ -1,10 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAccessToken, loginUrl } from '../api/spotify';
 import { FaSpotify } from 'react-icons/fa';
 
 const Login = () => {
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check for error in URL params
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    
+    if (errorParam) {
+      setError(
+        errorParam === 'unsupported_response_type' 
+          ? 'Authentication configuration error. Please try again later.'
+          : 'Login failed. Please try again.'
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -23,12 +38,18 @@ const Login = () => {
           <p className="text-white mb-8">
             Listen to millions of songs, podcasts, and audiobooks with enhanced features.
           </p>
+          {error && (
+        <div className="bg-red-500 text-white p-3 rounded-md mb-4">
+          {error}
+        </div>
+      )}
           <a
             href={loginUrl}
             className="bg-white text-black rounded-full px-8 py-3 font-bold hover:bg-spotify-lightest transition duration-300 inline-block"
           >
             Login with Spotify
           </a>
+          
         </div>
       </div>
     );

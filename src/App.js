@@ -11,6 +11,7 @@ import Playlist from './pages/Playlist';
 import Category from './pages/Category';
 import Login from './pages/Login';
 import PlayerControls from './components/PlayerControls';
+import Callback from './pages/Callback';
 
 const spotifyApi = new SpotifyWebApi();
 
@@ -101,6 +102,7 @@ function App() {
             <div className="flex-1 overflow-y-auto p-6">
               <Routes>
                 <Route path="/" element={<Home playTrack={playTrack} />} />
+                <Route path="/callback" element={<Callback />} />
                 <Route path="/search" element={<Search playTrack={playTrack} />} />
                 <Route path="/album/:id" element={<Album playTrack={playTrack} />} />
                 <Route path="/playlist/:id" element={<Playlist playTrack={playTrack} />} />
